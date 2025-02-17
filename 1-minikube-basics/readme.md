@@ -36,9 +36,6 @@ sudo usermod -aG docker $USER
 brew install --cask docker
 ```
 
-
-
-
 ### 2. Minikube
 #### Linux:
 ```bash

@@ -5,7 +5,7 @@ This repository contains various Kubernetes deployment templates for different e
 ## Folder Structure
 
 - [**minikube-basics**](./minikube-basics/) - Basic Kubernetes setup using Minikube. ✅
-- [**kind-multi-node**](./kind-multi-node/) - Multi-node Kubernetes cluster using KIND.
+- [**kind-multi-node**](./kind-multi-node/) - Multi-node Kubernetes cluster using KIND. ✅
 - [**eks-deployment**](./eks-deployment/) - Deployment templates for AWS EKS.
 - [**azure-deployment**](./azure-deployment/) - Deployment templates for Azure Kubernetes Service (AKS).
 - [**gke-deployment**](./gke-deployment/) - Deployment templates for Google Kubernetes Engine (GKE).
