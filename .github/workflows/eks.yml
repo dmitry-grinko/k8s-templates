@@ -92,61 +92,11 @@ jobs:
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name eks-app-dev
 
-      - name: Install AWS Load Balancer Controller
+      - name: Deploy application
         run: |
-          # Install helm if not present
-          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-
-          # Add and update eks helm repo
-          helm repo add eks https://aws.github.io/eks-charts
-          helm repo update
-
-          # Get the role ARN
-          ROLE_ARN=$(aws iam get-role --role-name eks-app-dev-aws-load-balancer-controller --query 'Role.Arn' --output text)
-
-          # Get VPC ID using AWS CLI and cluster name
-          CLUSTER_NAME="eks-app-dev"
-          VPC_ID=$(aws eks describe-cluster \
-            --name ${CLUSTER_NAME} \
-            --query "cluster.resourcesVpcConfig.vpcId" \
-            --output text)
-
-          # Install AWS Load Balancer Controller
-          helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
-            -n kube-system \
-            --set clusterName=${CLUSTER_NAME} \
-            --set serviceAccount.create=true \
-            --set serviceAccount.name=aws-load-balancer-controller \
-            --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="$ROLE_ARN" \
-            --set region=${{ secrets.AWS_REGION }} \
-            --set vpcId=$VPC_ID \
-            --wait
-
-          # Wait for the controller to be ready
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=aws-load-balancer-controller -n kube-system --timeout=120s
-
-      - name: Deploy to Kubernetes
-        run: |
-          # First apply everything except ingress
           kubectl apply -f 3-eks-deployment/k8s/deployment.yaml
           kubectl apply -f 3-eks-deployment/k8s/service.yaml
-          kubectl apply -f 3-eks-deployment/k8s/rbac.yaml
-          
-          # Wait for deployment to be ready
-          kubectl rollout status deployment/nodejs-express-app
 
-          # Now apply ingress
-          kubectl apply -f 3-eks-deployment/k8s/ingress.yaml
-          
-          # Wait for ingress to get an address
-          echo "Waiting for ingress to get an address..."
-          timeout=300
-          while [ $timeout -gt 0 ]; do
-            if kubectl get ingress nodejs-express-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null | grep .; then
-              echo "Ingress is ready!"
-              break
-            fi
-            sleep 10
-            timeout=$((timeout-10))
-            echo "Still waiting... ($timeout seconds left)"
-          done
+          echo "Waiting for deployment..."
+          kubectl rollout status deployment/nodejs-express-app --timeout=300s
+

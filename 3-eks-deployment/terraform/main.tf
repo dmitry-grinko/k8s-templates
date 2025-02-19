@@ -35,7 +35,7 @@ module "vpc" {
 
 # EKS Module
 module "eks" {
-  source = "./modulues/eks"
+  source = "./modules/eks"
 
   project_name      = var.project_name
   environment       = var.environment
