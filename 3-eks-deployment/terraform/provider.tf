@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.45"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 
   # aws s3api create-bucket --bucket dmitry-grinko-k8s-test-app-tfstate --region us-east-1

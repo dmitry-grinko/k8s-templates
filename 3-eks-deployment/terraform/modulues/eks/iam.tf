@@ -55,13 +55,13 @@ resource "aws_iam_role_policy_attachment" "eks_container_registry_policy" {
 
 # AWS Load Balancer Controller IAM Resources
 data "tls_certificate" "eks" {
-  url = aws_eks_cluster.cluster.identity[0].oidc[0].issuer
+  url = aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
 
 resource "aws_iam_openid_connect_provider" "eks" {
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
-  url             = aws_eks_cluster.cluster.identity[0].oidc[0].issuer
+  url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
 
 data "aws_iam_policy_document" "aws_load_balancer_controller_assume_role" {
