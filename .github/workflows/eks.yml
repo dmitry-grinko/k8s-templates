@@ -106,7 +106,7 @@ jobs:
 
           # Change to terraform directory and get VPC ID
           cd 3-eks-deployment/terraform
-          VPC_ID=$(terraform output -raw vpc_id)
+          VPC_ID=$(terraform output -json vpc_id | jq -r '.')
           cd -
 
           # Install AWS Load Balancer Controller
