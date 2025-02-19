@@ -96,8 +96,8 @@ jobs:
           helm repo add eks https://aws.github.io/eks-charts
           helm repo update
 
-          # Create namespace if it doesn't exist
-          kubectl create namespace kube-system --dry-run=client -o yaml | kubectl apply -f -
+          # Get the role ARN
+          ROLE_ARN=$(aws iam get-role --role-name eks-app-dev-aws-load-balancer-controller --query 'Role.Arn' --output text)
 
           # Install AWS Load Balancer Controller
           helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
@@ -105,6 +105,9 @@ jobs:
             --set clusterName=eks-app-dev \
             --set serviceAccount.create=true \
             --set serviceAccount.name=aws-load-balancer-controller \
+            --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="$ROLE_ARN" \
+            --set region=${{ secrets.AWS_REGION }} \
+            --set vpcId=$(terraform -chdir=3-eks-deployment/terraform output -raw vpc_id) \
             --wait
 
           # Wait for the controller to be ready

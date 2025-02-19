@@ -18,4 +18,29 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: anonymous-access
-  apiGroup: rbac.authorization.k8s.io 
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: alb-ingress-controller
+rules:
+  - apiGroups: ["", "extensions", "networking.k8s.io"]
+    resources: ["configmaps", "endpoints", "events", "ingresses", "ingresses/status", "services"]
+    verbs: ["create", "get", "list", "update", "watch", "patch"]
+  - apiGroups: ["", "extensions", "networking.k8s.io"]
+    resources: ["nodes", "pods", "secrets", "services", "namespaces"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: alb-ingress-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: alb-ingress-controller
+subjects:
+  - kind: ServiceAccount
+    name: aws-load-balancer-controller
+    namespace: kube-system 
