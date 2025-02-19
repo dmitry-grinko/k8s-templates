@@ -1,1 +1,4 @@
 .notes
+variables.tfvars
+.terraform
+.terraform.lock.hcl
