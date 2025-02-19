@@ -47,3 +47,46 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.10.5
+
+      - name: Terraform Init
+        run: terraform -chdir=3-eks-deployment/terraform init
+
+      - name: Select Terraform Workspace
+        run: terraform -chdir=3-eks-deployment/terraform workspace select dev || terraform -chdir=3-eks-deployment/terraform workspace new dev
+
+      - name: Terraform Validate
+        run: terraform -chdir=3-eks-deployment/terraform validate
+
+      - name: Terraform Plan
+        run: terraform -chdir=3-eks-deployment/terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform -chdir=3-eks-deployment/terraform apply -auto-approve tfplan
+
+      # - name: Update kubeconfig
+      #   run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name eks-app-dev
+
+      # - name: Deploy to Kubernetes
+      #   run: |
+      #     kubectl apply -f 3-eks-deployment/k8s/
