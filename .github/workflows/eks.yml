@@ -84,9 +84,17 @@ jobs:
       - name: Terraform Apply
         run: terraform -chdir=3-eks-deployment/terraform apply -auto-approve tfplan
 
-      # - name: Update kubeconfig
-      #   run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name eks-app-dev
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name eks-app-dev
 
-      # - name: Deploy to Kubernetes
-      #   run: |
-      #     kubectl apply -f 3-eks-deployment/k8s/
+      - name: Deploy to Kubernetes
+        run: |
+          # Replace variables in deployment manifest
+          sed -i "s|\${DOCKERHUB_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" 3-eks-deployment/k8s/deployment.yaml
+          sed -i "s|\${GITHUB_SHA}|${{ github.sha }}|g" 3-eks-deployment/k8s/deployment.yaml
+          
+          # Apply the manifests
+          kubectl apply -f 3-eks-deployment/k8s/
+          
+          # Wait for rollout to complete
+          kubectl rollout status deployment/nodejs-express-app
