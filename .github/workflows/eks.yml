@@ -70,19 +70,24 @@ jobs:
           terraform_version: 1.10.5
 
       - name: Terraform Init
-        run: terraform -chdir=3-eks-deployment/terraform init
+        working-directory: 3-eks-deployment/terraform
+        run: terraform init
 
       - name: Select Terraform Workspace
-        run: terraform -chdir=3-eks-deployment/terraform workspace select dev || terraform -chdir=3-eks-deployment/terraform workspace new dev
+        working-directory: 3-eks-deployment/terraform
+        run: terraform workspace select dev || terraform workspace new dev
 
       - name: Terraform Validate
-        run: terraform -chdir=3-eks-deployment/terraform validate
+        working-directory: 3-eks-deployment/terraform
+        run: terraform validate
 
       - name: Terraform Plan
-        run: terraform -chdir=3-eks-deployment/terraform plan -out=tfplan
+        working-directory: 3-eks-deployment/terraform
+        run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        run: terraform -chdir=3-eks-deployment/terraform apply -auto-approve tfplan
+        working-directory: 3-eks-deployment/terraform
+        run: terraform apply -auto-approve tfplan
 
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name eks-app-dev
@@ -107,7 +112,7 @@ jobs:
             --set serviceAccount.name=aws-load-balancer-controller \
             --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="$ROLE_ARN" \
             --set region=${{ secrets.AWS_REGION }} \
-            --set vpcId=$(terraform -chdir=3-eks-deployment/terraform output -raw vpc_id) \
+            --set vpcId=$(terraform output -raw vpc_id) \
             --wait
 
           # Wait for the controller to be ready
