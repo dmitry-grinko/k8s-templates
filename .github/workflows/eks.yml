@@ -104,15 +104,17 @@ jobs:
           # Get the role ARN
           ROLE_ARN=$(aws iam get-role --role-name eks-app-dev-aws-load-balancer-controller --query 'Role.Arn' --output text)
 
-          # Change to terraform directory and get VPC ID
-          cd 3-eks-deployment/terraform
-          VPC_ID=$(terraform output -json vpc_id | jq -r '.')
-          cd -
+          # Get VPC ID using AWS CLI and cluster name
+          CLUSTER_NAME="eks-app-dev"
+          VPC_ID=$(aws eks describe-cluster \
+            --name ${CLUSTER_NAME} \
+            --query "cluster.resourcesVpcConfig.vpcId" \
+            --output text)
 
           # Install AWS Load Balancer Controller
           helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
             -n kube-system \
-            --set clusterName=eks-app-dev \
+            --set clusterName=${CLUSTER_NAME} \
             --set serviceAccount.create=true \
             --set serviceAccount.name=aws-load-balancer-controller \
             --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="$ROLE_ARN" \
