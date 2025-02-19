@@ -2,3 +2,5 @@
 variables.tfvars
 .terraform
 .terraform.lock.hcl
+k8s
+terraform
