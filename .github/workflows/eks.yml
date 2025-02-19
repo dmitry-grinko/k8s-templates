@@ -89,22 +89,49 @@ jobs:
 
       - name: Install AWS Load Balancer Controller
         run: |
+          # Install helm if not present
+          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+          # Add and update eks helm repo
           helm repo add eks https://aws.github.io/eks-charts
           helm repo update
+
+          # Create namespace if it doesn't exist
+          kubectl create namespace kube-system --dry-run=client -o yaml | kubectl apply -f -
+
+          # Install AWS Load Balancer Controller
           helm upgrade -i aws-load-balancer-controller eks/aws-load-balancer-controller \
             -n kube-system \
             --set clusterName=eks-app-dev \
             --set serviceAccount.create=true \
-            --set serviceAccount.name=aws-load-balancer-controller
+            --set serviceAccount.name=aws-load-balancer-controller \
+            --wait
+
+          # Wait for the controller to be ready
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=aws-load-balancer-controller -n kube-system --timeout=120s
 
       - name: Deploy to Kubernetes
         run: |
-          # Replace variables in deployment manifest
-          sed -i "s|\${DOCKERHUB_USERNAME}|${{ secrets.DOCKERHUB_USERNAME }}|g" 3-eks-deployment/k8s/deployment.yaml
-          sed -i "s|\${GITHUB_SHA}|${{ github.sha }}|g" 3-eks-deployment/k8s/deployment.yaml
+          # First apply everything except ingress
+          kubectl apply -f 3-eks-deployment/k8s/deployment.yaml
+          kubectl apply -f 3-eks-deployment/k8s/service.yaml
+          kubectl apply -f 3-eks-deployment/k8s/rbac.yaml
           
-          # Apply the manifests
-          kubectl apply -f 3-eks-deployment/k8s/
-          
-          # Wait for rollout to complete
+          # Wait for deployment to be ready
           kubectl rollout status deployment/nodejs-express-app
+
+          # Now apply ingress
+          kubectl apply -f 3-eks-deployment/k8s/ingress.yaml
+          
+          # Wait for ingress to get an address
+          echo "Waiting for ingress to get an address..."
+          timeout=300
+          while [ $timeout -gt 0 ]; do
+            if kubectl get ingress nodejs-express-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null | grep .; then
+              echo "Ingress is ready!"
+              break
+            fi
+            sleep 10
+            timeout=$((timeout-10))
+            echo "Still waiting... ($timeout seconds left)"
+          done
